@@ -11,14 +11,24 @@
               <b-card-body>
                 <b-card-body></b-card-body>
                 <h2>{{room.name}}</h2>
-                <b-col sm="6">
-                  <b-button class="'power-button'" v-on:click="roomOn(room)">On</b-button>
-                </b-col>
-                <b-col sm="6">
-                  <b-button class="'power-button'" v-on:click="roomOff(room)">Off</b-button>
-                </b-col>
-                <b-input type="color" @change="roomColor(room, $event)" />
-                <b-input type="range" @change="roomBrightness(room, $event)"/>
+                <b-row>
+                  <b-col sm="6">
+                    <b-button class="power-button" v-on:click="roomOn(room)">On</b-button>
+                  </b-col>
+                  <b-col sm="6">
+                    <b-button class="power-button" v-on:click="roomOff(room)">Off</b-button>
+                  </b-col>
+                  <b-col sm="12">
+                    <b-input class="mt-2" type="color" @change="roomColor(room, $event)" />
+                  </b-col>
+                  <b-col sm="12">
+                    <b-input class="mt-2" type="range" @change="roomBrightness(room, $event)"/>
+                  </b-col>
+                  <b-col class="mt-3">
+                    <b-button v-if="beAnnoying" variant="success" v-on:click="notAnnoying()">Stop</b-button>
+                    <b-button v-else variant="danger" v-on:click="annoying(room)">Be Annoying</b-button>
+                  </b-col>
+                </b-row>
               </b-card-body>
             </b-card>
           </b-col>
@@ -29,11 +39,11 @@
                   <b-col sm="12">
                     <h3>{{lights[command.id].name}}</h3>
                   </b-col>
-                  <b-col sm="6">
-                    <b-button :class="'power-button '" :variant="command.state === getStates().ON ? 'success' : 'secondary'" v-on:click="lightOn(room, commandIndex)">On</b-button>
+                  <b-col sm="6" class="mt-2">
+                    <b-button class="power-button" :variant="command.state === getStates().ON ? 'success' : 'secondary'" v-on:click="lightOn(room, commandIndex)">On</b-button>
                   </b-col>
-                  <b-col sm="6">
-                    <b-button :class="'power-button '" :variant="command.state === getStates().OFF ? 'danger' : 'secondary'"  v-on:click="lightOff(room, commandIndex)">Off</b-button>
+                  <b-col sm="6" class="mt-2">
+                    <b-button class="power-button" :variant="command.state === getStates().OFF ? 'danger' : 'secondary'"  v-on:click="lightOff(room, commandIndex)">Off</b-button>
                   </b-col>
                   <b-input type="color" v-model="command.color" @change="setColor(room, commandIndex, $event)" />
                   <b-input type="range" min="0" max="100" step="10" v-model="command.brightness" @change="setBrightness(room, commandIndex, $event)"/>
@@ -63,7 +73,8 @@
         firestore: null,
         commandsCollection: null,
         lights: [],
-        rooms: []
+        rooms: [],
+        beAnnoying: false
       }
     },
     methods:{
@@ -101,6 +112,30 @@
       },
       getStates(){
         return States;
+      },
+      getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      },
+      async wait(timeMS){
+        return await new Promise((resolve, reject)=>{setTimeout(()=>{resolve()},timeMS)})
+      },
+      async annoying(room){
+        this.beAnnoying = true;
+        const colors = ["#3271A8", "#ff5733", "#b233ff", "#ff3333", "#33ff4f", "#FFFFFF", "#000000"];
+        const brightnesses = [100, 90, 80, 70, 60, 50, 40, 30, 20];
+        while(this.beAnnoying) {
+          const commandIndex = this.getRandomInt(0, room.lights.length-1);
+          const color = colors[this.getRandomInt(0, colors.length-1)];
+          const brightness = brightnesses[this.getRandomInt(0, brightnesses.length-1)];
+          this.setColor(room, commandIndex, color);
+          this.setBrightness(room, commandIndex, brightness);
+          await this.wait(300);
+        }
+      },
+      notAnnoying(){
+        this.beAnnoying = false;
       }
     },
     async created () {

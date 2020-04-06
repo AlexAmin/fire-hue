@@ -1,11 +1,8 @@
 const v3 = require('node-hue-api').v3;
 const LightState = v3.lightStates.LightState;
 const firebaseAdmin = require('firebase-admin');
-const {hexToRgb} = require("./rgbToCIE");
 require('dotenv').config();
 const serviceAccount = require('./firebase-key');
-const {rgb2xyz} = require("./rgbToCIE");
-const {rgb_to_cie} = require("./rgbToCIE");
 const {RoomCommand} = require("fire-hue-common/types");
 const {LightCommand} = require("fire-hue-common/types");
 
@@ -40,10 +37,18 @@ function convertHueGroupToRoom(group){
 function executeRoomCommand(api, command){
 
 }
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
 
 function executeLightCommand(api, command){
     const state = new LightState();
-
+    console.log("run", command);
     command = LightCommand.fromObject(command);
     if(command.state === "on"){
         state
@@ -69,6 +74,7 @@ v3.discovery.nupnpSearch()
         return v3.api.createLocal(host).connect(HUE_USERNAME);
     })
     .then(api => {
+        console.log("connected");
         commandsCollection.where("createdAt", ">", new Date()).onSnapshot(querySnapshot => {
             querySnapshot.docChanges().forEach((change)=>{
                 switch(change.type){
