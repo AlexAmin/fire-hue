@@ -22,7 +22,7 @@
               </b-card-body>
             </b-card>
           </b-col>
-          <b-col sm="4" class="mt-3" v-for="command in room.commands" v-bind:key="command.id">
+          <b-col sm="4" class="mt-3" v-for="(command, commandIndex) in room.commands" v-bind:key="command.id">
             <b-card>
               <b-card-body>
                 <b-row>
@@ -30,13 +30,13 @@
                     <h3>{{lights[command.id].name}}</h3>
                   </b-col>
                   <b-col sm="6">
-                    <b-button :class="'power-button '" :variant="command.state === getStates().ON ? 'success' : 'secondary'" v-on:click="lightOn(lights[command.id])">On</b-button>
+                    <b-button :class="'power-button '" :variant="command.state === getStates().ON ? 'success' : 'secondary'" v-on:click="lightOn(room, commandIndex)">On</b-button>
                   </b-col>
                   <b-col sm="6">
-                    <b-button :class="'power-button '" :variant="command.state === getStates().OFF ? 'danger' : 'secondary'"  v-on:click="lightOff(lights[command.id])">Off</b-button>
+                    <b-button :class="'power-button '" :variant="command.state === getStates().OFF ? 'danger' : 'secondary'"  v-on:click="lightOff(room, commandIndex)">Off</b-button>
                   </b-col>
-                  <b-input type="color" v-model="command.color" @change="roomColor(room, $event)" />
-                  <b-input type="range" v-model="command.brightness" @change="roomBrightness(room, $event)"/>
+                  <b-input type="color" v-model="command.color" @change="setColor(room, commandIndex, $event)" />
+                  <b-input type="range" min="0" max="100" step="10" v-model="command.brightness" @change="setBrightness(room, commandIndex, $event)"/>
                 </b-row>
               </b-card-body>
             </b-card>
@@ -67,25 +67,17 @@
       }
     },
     methods:{
-      lightOn(light){
-        const commandsCollection = this.firestore.collection('commands');
-        const command = new LightCommand(States.ON, light.id, null, 100);
-        commandsCollection.add(command.toObject())
+      lightOn(room, commandIndex){
+        room.commands[commandIndex].setState(States.ON);
       },
-      lightOff(light){
-        const commandsCollection = this.firestore.collection('commands');
-        const command = new LightCommand(States.OFF, light.id, null, 100);
-        commandsCollection.add(command.toObject())
+      lightOff(room, commandIndex){
+        room.commands[commandIndex].setState(States.OFF);
       },
-      colorChanged(light, event){
-        const commandsCollection = this.firestore.collection('commands');
-        const command = new LightCommand(States.ON, light.id, event.target.value, 100);
-        commandsCollection.add(command.toObject())
+      setColor(room, commandIndex, event){
+        room.commands[commandIndex].setColor(event);
       },
-      brightnessChanged(light, event){
-        const commandsCollection = this.firestore.collection('commands');
-        const command = new LightCommand(States.ON, light.id, null, event.target.value);
-        commandsCollection.add(command.toObject())
+      setBrightness(room, commandIndex, event){
+        room.commands[commandIndex].setBrightness(event);
       },
       roomOn(room){
         room.commands.forEach((command, i)=>{
@@ -98,13 +90,11 @@
         })
       },
       roomColor(room, event){
-        console.log(room, event);
         room.commands.forEach((command, i)=>{
           room.commands[i].setColor(event);
         })
       },
       roomBrightness(room, event){
-        console.log(room, event);
         room.commands.forEach((command, i)=>{
           room.commands[i].setBrightness(event);
         })
