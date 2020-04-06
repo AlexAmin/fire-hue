@@ -7,6 +7,8 @@
       {{light.name}}
       <button v-on:click="lightOn(light)">On</button>
       <button v-on:click="lightOff(light)">Off</button>
+      <input type="color" @change="colorChanged(light, $event)"/>
+      <input type="range" @change="brightnessChanged(light, $event)"/>
     </div>
   </b-container>
 </template>
@@ -32,13 +34,22 @@
     methods:{
       lightOn(light){
         const commandsCollection = this.firestore.collection('commands');
-        const command = new LightCommand(States.ON, light.id, null);
+        const command = new LightCommand(States.ON, light.id, null, 100);
         commandsCollection.add(command.toObject())
       },
       lightOff(light){
         const commandsCollection = this.firestore.collection('commands');
-        const command = new LightCommand(States.OFF, light.id, null);
-        console.log(command.toObject());
+        const command = new LightCommand(States.OFF, light.id, null, 100);
+        commandsCollection.add(command.toObject())
+      },
+      colorChanged(light, event){
+        const commandsCollection = this.firestore.collection('commands');
+        const command = new LightCommand(States.ON, light.id, event.target.value, 100);
+        commandsCollection.add(command.toObject())
+      },
+      brightnessChanged(light, event){
+        const commandsCollection = this.firestore.collection('commands');
+        const command = new LightCommand(States.ON, light.id, null, event.target.value);
         commandsCollection.add(command.toObject())
       }
     },

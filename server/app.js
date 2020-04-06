@@ -1,8 +1,11 @@
 const v3 = require('node-hue-api').v3;
 const LightState = v3.lightStates.LightState;
 const firebaseAdmin = require('firebase-admin');
+const {hexToRgb} = require("./rgbToCIE");
 require('dotenv').config();
 const serviceAccount = require('./firebase-key');
+const {rgb2xyz} = require("./rgbToCIE");
+const {rgb_to_cie} = require("./rgbToCIE");
 const {RoomCommand} = require("fire-hue-common/types");
 const {LightCommand} = require("fire-hue-common/types");
 
@@ -36,13 +39,19 @@ function convertHueGroupToRoom(group){
 
 function executeLightCommand(api, command){
     const state = new LightState();
+    console.log("??", command);
     command = LightCommand.fromObject(command);
 
     if(command.state === "on"){
         state
             .on()
             .ct(200)
-            .brightness(100);
+
+        state.brightness(command.brightness);
+        if(command.color){
+            const rgb = hexToRgb(command.color);
+            state.rgb(rgb.r, rgb.g, rgb.b);
+        }
     }else{
         state.off()
     }

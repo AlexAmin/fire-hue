@@ -7,10 +7,11 @@ class LightCommand extends Command {
      * @param lightId {Number!}
      * @param color {String?}
      */
-    constructor(state, lightId, color) {
+    constructor(state, lightId, color, brightness) {
         super(state, CommandTargets.LIGHT);
         this.id = lightId;
         this.color = color;
+        this.brightness = brightness;
     }
 }
 /**
