@@ -37,11 +37,14 @@ function convertHueGroupToRoom(group){
     return {name: name, id: id, lights: lights}
 }
 
+function executeRoomCommand(api, command){
+
+}
+
 function executeLightCommand(api, command){
     const state = new LightState();
-    console.log("??", command);
-    command = LightCommand.fromObject(command);
 
+    command = LightCommand.fromObject(command);
     if(command.state === "on"){
         state
             .on()
@@ -73,9 +76,10 @@ v3.discovery.nupnpSearch()
                         const commandData = change.doc.data();
                         switch(commandData.target){
                             case "room":
+                                executeRoomCommand(api, commandData);
                                 break;
                             case "light":
-                                executeLightCommand(api, commandData)
+                                executeLightCommand(api, commandData);
                                 break;
                         }
                         break;

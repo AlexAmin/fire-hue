@@ -13,6 +13,8 @@ module.exports = class Command {
      * @returns {{} & Command}
      */
     toObject() {
-        return Object.assign({}, this)
+        const objectValue = Object.assign({}, this)
+        delete objectValue.commandsCollection;
+        return objectValue
     }
 };
