@@ -34,7 +34,19 @@
         rooms: []
       }
     },
-    methods:{},
+    methods:{
+      rgbToHex(rgb) {
+        if(!rgb){
+          return null;
+        }
+        rgb = `rgb(${rgb.red},${rgb.green},${rgb.blue}`;
+        rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
+        return (rgb && rgb.length === 4) ? "#" +
+          ("0" + parseInt(rgb[1],10).toString(16)).slice(-2) +
+          ("0" + parseInt(rgb[2],10).toString(16)).slice(-2) +
+          ("0" + parseInt(rgb[3],10).toString(16)).slice(-2) : '';
+      }
+    },
     async created () {
       this.firestore = firebase.firestore();
       this.commandsCollection = this.firestore.collection('commands');
@@ -52,7 +64,7 @@
       rooms.forEach((room)=>{
         room.commands = [];
         room.lights.forEach((light)=>{
-          room.commands.push(new LightCommand(States.OFF, light, null, 0, this.commandsCollection))
+          room.commands.push(new LightCommand(States.OFF, light, this.rgbToHex(lightMap[light].color), 0, this.commandsCollection))
         });
       });
 

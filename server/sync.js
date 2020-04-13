@@ -1,5 +1,6 @@
 const v3 = require('node-hue-api').v3;
 const LightState = v3.lightStates.LightState;
+const RGBColor = require("./RGBColor");
 module.exports = async function sync(api, roomsCollection, lightsCollection){
     //Get all light groups (Rooms etc.)
     const allGroups = await api.groups.getAll();
@@ -25,6 +26,12 @@ module.exports = async function sync(api, roomsCollection, lightsCollection){
 function convertHueLightToStoreLight(light){
     const name = light._data.name;
     const id = light._data.id;
+    if(light.state.xy){
+        const colorJSON = new RGBColor()
+            .fromXY(light.state.xy[0], light.state.xy[1], light.state.bri)
+            .toJSON();
+        return {name: name, id: id, color: colorJSON}
+    }
     return {name: name, id: id}
 }
 
