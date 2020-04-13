@@ -1,32 +1,36 @@
 <template>
   <b-col
     sm="12"
-    class="room-element mt-2"
+    class="room-element mt-2 ml-3 mr-3"
     :style='"background-color: "+getBackgroundColor()'
   >
     <b-row>
       <b-col sm="6" class="room-element-name">
         <span class="align-middle">{{room.name}}</span>
       </b-col>
-      <b-row>
-        <b-col sm="12">
-          <SwitchElement
-            v-on:on="roomOn"
-            v-on:off="roomOff"
-          />
-        </b-col>
-        <b-col sm="12">
-          <b-input class="mt-2" type="color" @change="roomColor(room, $event)" />
-        </b-col>
-        <b-col sm="12">
-          <b-input class="mt-2" type="range" @change="roomBrightness(room, $event)"/>
-        </b-col>
-        <b-col class="mt-3">
-          <b-button v-if="beAnnoying" variant="success" v-on:click="notAnnoying()">Stop</b-button>
-          <b-button v-else variant="danger" v-on:click="annoying(room)">Be Annoying</b-button>
-        </b-col>
-
-      </b-row>
+      <b-col sm="6">
+        <b-row>
+          <b-col cols="3" class="mt-3">
+            <SwitchElement
+              v-on:on="roomOn"
+              v-on:off="roomOff"
+            />
+          </b-col>
+          <b-col cols="3" class="mt-3">
+            <b-input  type="color" @change="roomColor(room, $event)" />
+          </b-col>
+          <b-col cols="6" class="mt-3">
+            <b-button v-if="beAnnoying" variant="success" v-on:click="notAnnoying()">Stop</b-button>
+            <b-button v-else variant="danger" v-on:click="annoying(room)">Be Annoying</b-button>
+          </b-col>
+          <b-col cols="12" class="mt-3">
+            <b-button @click="toggleLights">{{showLights ? "Hide Lights" : "Show Lights"}}</b-button>
+          </b-col>
+          <b-col cols="12" class="mt-3">
+            <b-input type="range" @change="roomBrightness(room, $event)"/>
+          </b-col>
+        </b-row>
+      </b-col>
       <Light
         v-if="showLights"
         v-for="(command, commandIndex) in room.commands"
@@ -65,6 +69,9 @@
       lights: Object
     },
     methods:{
+      toggleLights(){
+        this.showLights = !this.showLights;
+      },
       getBackgroundColor(){
         const colors = [];
         this.room.commands.forEach((command)=>{

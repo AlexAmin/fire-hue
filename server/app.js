@@ -95,6 +95,7 @@ async function start(){
     lights = await sync(hueAPIClient, roomsCollection, lightsCollection);
     console.log("Hue synced");
     console.log("Listening for commands");
+
     commandsCollection
         .onSnapshot(querySnapshot => {
             querySnapshot.docChanges()
