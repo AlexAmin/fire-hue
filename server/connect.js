@@ -3,7 +3,7 @@ const v3 = require('node-hue-api').v3;
 module.exports = async function connectHue(HUE_USERNAME, HUE_BASE_STATION_NAME, HUE_BASE_STATION_IP_ADDRESS){
     if(HUE_BASE_STATION_IP_ADDRESS){
         console.log(`Connecting to Hue base station at ${HUE_BASE_STATION_IP_ADDRESS}`);
-        return v3.api.createLocal(hueBaseStation.ipaddress).connect(HUE_USERNAME);
+        return v3.api.createLocal(HUE_BASE_STATION_IP_ADDRESS).connect(HUE_USERNAME);
     }
     let searchResults = await v3.discovery.nupnpSearch();
     if(searchResults.length === 0){

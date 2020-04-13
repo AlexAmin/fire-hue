@@ -3,14 +3,27 @@ https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_switch
 -->
 <template>
   <label class="switch">
-    <input type="checkbox" checked>
+    <input
+      type="checkbox"
+      :checked="checked"
+      @change="onCheckedChanged"
+    />
     <span class="slider round"></span>
   </label>
 </template>
 
 <script>
   export default {
-    name: 'Switch',
+    name: 'SwitchElement',
+    methods:{
+      onCheckedChanged(event){
+        if(event.target.checked){
+          this.$emit("on");
+        }else{
+          this.$emit("off");
+        }
+      }
+    },
     props:{
       checked: Boolean
     }

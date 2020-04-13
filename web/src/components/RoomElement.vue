@@ -1,19 +1,19 @@
 <template>
   <b-col
     sm="12"
-    class="room-element"
+    class="room-element mt-2"
     :style='"background-color: "+getBackgroundColor()'
   >
     <b-row>
-      <b-col sm="6">
-        <h2>{{room.name}}</h2>
+      <b-col sm="6" class="room-element-name">
+        <span class="align-middle">{{room.name}}</span>
       </b-col>
       <b-row>
-        <b-col sm="6">
-          <b-button class="power-button" v-on:click="roomOn(room)">On</b-button>
-        </b-col>
-        <b-col sm="6">
-          <b-button class="power-button" v-on:click="roomOff(room)">Off</b-button>
+        <b-col sm="12">
+          <SwitchElement
+            v-on:on="roomOn"
+            v-on:off="roomOff"
+          />
         </b-col>
         <b-col sm="12">
           <b-input class="mt-2" type="color" @change="roomColor(room, $event)" />
@@ -25,6 +25,7 @@
           <b-button v-if="beAnnoying" variant="success" v-on:click="notAnnoying()">Stop</b-button>
           <b-button v-else variant="danger" v-on:click="annoying(room)">Be Annoying</b-button>
         </b-col>
+
       </b-row>
       <Light
         v-if="showLights"
@@ -46,12 +47,13 @@
 <script>
   import Light from "./Light";
   import blend_colors from "../../blendColors";
+  import SwitchElement from "./SwitchElement";
 
   const States = require("fire-hue-common/enum/states");
 
   export default {
     name: 'RoomElement',
-    components:{Light},
+    components: { Light, SwitchElement },
     data: ()=>{
       return {
         beAnnoying: false,
@@ -94,14 +96,16 @@
       setBrightness(room, commandIndex, event){
         room.commands[commandIndex].setBrightness(event);
       },
-      roomOn(room){
-        room.commands.forEach((command, i)=>{
-          room.commands[i].setState(States.ON)
+      roomOn(){
+        console.log("on");
+        this.room.commands.forEach((command, i)=>{
+          this.room.commands[i].setState(States.ON)
         })
       },
-      roomOff(room){
-        room.commands.forEach((command, i)=>{
-          room.commands[i].setState(States.OFF);
+      roomOff(){
+        console.log("off");
+        this.room.commands.forEach((command, i)=>{
+          this.room.commands[i].setState(States.OFF);
         })
       },
       roomColor(room, event){
@@ -151,9 +155,20 @@
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="scss">
+<style scoped>
+
   .room-element{
     border-radius: 8px;
-
+    border: 1px black solid;
   }
+  .room-element-name {
+    color: white;
+    display: flex;
+    align-items: center;
+  }
+  .room-element-name span{
+    font-size: 28px;
+  }
+
+
 </style>

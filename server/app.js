@@ -90,7 +90,7 @@ function commandAdded(change){
     }
 }
 async function start(){
-    hueAPIClient = await connectHue(HUE_USERNAME, HUE_BASE_STATION_NAME);
+    hueAPIClient = await connectHue(HUE_USERNAME, HUE_BASE_STATION_NAME, HUE_BASE_STATION_IP_ADDRESS);
     console.log("Hue connected");
     lights = await sync(hueAPIClient, roomsCollection, lightsCollection);
     console.log("Hue synced");
