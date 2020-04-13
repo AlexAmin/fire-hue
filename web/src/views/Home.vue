@@ -1,8 +1,8 @@
 <template>
   <b-container class="home">
-    <router-link to="/rooms">
+    <!--<router-link to="/rooms">
       Rooms
-    </router-link>
+    </router-link>-->
     <b-row>
       <b-col sm="12" v-for="room in rooms" v-bind:key="room.id">
         <b-row>
@@ -123,6 +123,9 @@
       },
       async annoying(room){
         this.beAnnoying = true;
+        this.roomOn(room);
+        await this.wait(150);
+
         const colors = ["#3271A8", "#ff5733", "#b233ff", "#ff3333", "#33ff4f", "#FFFFFF", "#000000"];
         const brightnesses = [100, 90, 80, 70, 60, 50, 40, 30, 20];
         while(this.beAnnoying) {

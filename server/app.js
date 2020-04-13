@@ -1,4 +1,5 @@
 const v3 = require('node-hue-api').v3;
+const Queue = require("./queue");
 const LightState = v3.lightStates.LightState;
 const firebaseAdmin = require('firebase-admin');
 require('dotenv').config();
@@ -11,6 +12,7 @@ firebaseAdmin.initializeApp({
     credential: firebaseAdmin.credential.cert(serviceAccount)
 });
 
+const queue = new Queue();
 const a = new LightCommand();
 const db = firebaseAdmin.firestore();
 const lightsCollection = db.collection("lights");
@@ -48,7 +50,6 @@ function hexToRgb(hex) {
 
 function executeLightCommand(api, command){
     const state = new LightState();
-    console.log("run", command);
     command = LightCommand.fromObject(command);
     if(command.state === "on"){
         state
@@ -71,29 +72,35 @@ v3.discovery.nupnpSearch()
     .then(searchResults => {
         searchResults = searchResults.filter( result => result.name === "Alex");
         const host = searchResults[0].ipaddress;
+        console.log("Hue", host);
         return v3.api.createLocal(host).connect(HUE_USERNAME);
     })
     .then(api => {
-        console.log("connected");
-        commandsCollection.where("createdAt", ">", new Date()).onSnapshot(querySnapshot => {
-            querySnapshot.docChanges().forEach((change)=>{
-                switch(change.type){
-                    case "added":
-                        const commandData = change.doc.data();
-                        switch(commandData.target){
-                            case "room":
-                                executeRoomCommand(api, commandData);
-                                break;
-                            case "light":
-                                executeLightCommand(api, commandData);
-                                break;
+        //queueLoop(api);
+        const date = new Date();
+        const commandHistoryCollection = db.collection("commandHistory");
+        commandsCollection
+            .onSnapshot(querySnapshot => {
+                querySnapshot.docChanges()
+                    .forEach((change)=>{
+                        if(change.type === "added"){
+                            const commandData = change.doc.data();
+                            const id = change.doc.id;
+                            commandsCollection.doc(change.doc.id).delete()
+                                .then(()=>{
+                                    commandHistoryCollection.doc(id).set(commandData)
+                                });
+                            switch(commandData.target){
+                                case "room":
+                                    executeRoomCommand(api, commandData);
+                                    break;
+                                case "light":
+                                    executeLightCommand(api, commandData)
+                                    break;
+                            }
                         }
-                        break;
-                    case "modified":
-                        break;
-                }
-            })
-        });
+                    })
+            });
     });
 
 function sync(){
@@ -136,5 +143,5 @@ function sync(){
             console.log(`Light state change was successful? ${result}`);
         })
     ;
-
 }
+sync();

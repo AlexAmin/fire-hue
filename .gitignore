@@ -5,3 +5,4 @@
 build/
 .env
 server/firebase-key.json
+web/dist
