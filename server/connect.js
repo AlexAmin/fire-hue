@@ -1,6 +1,10 @@
 const v3 = require('node-hue-api').v3;
 
-module.exports = async function connectHue(HUE_USERNAME, HUE_BASE_STATION_NAME){
+module.exports = async function connectHue(HUE_USERNAME, HUE_BASE_STATION_NAME, HUE_BASE_STATION_IP_ADDRESS){
+    if(HUE_BASE_STATION_IP_ADDRESS){
+        console.log(`Connecting to Hue base station at ${HUE_BASE_STATION_IP_ADDRESS}`);
+        return v3.api.createLocal(hueBaseStation.ipaddress).connect(HUE_USERNAME);
+    }
     let searchResults = await v3.discovery.nupnpSearch();
     if(searchResults.length === 0){
         throw new Error("No Hue base stations were found on the network");
@@ -26,6 +30,12 @@ module.exports = async function connectHue(HUE_USERNAME, HUE_BASE_STATION_NAME){
     }
     //There is only one base station in the array at this point
     const hueBaseStation = searchResults[0];
+
+    if(HUE_BASE_STATION_NAME && hueBaseStation.name !== HUE_BASE_STATION_NAME){
+        //If only one station was found, we need to check one last time if the station is the correct one
+        throw new Error(`Only one base station was found and its name does not match the requested name (${hueBaseStation.name} !== ${HUE_BASE_STATION_NAME})`)
+    }
+
     console.log(`Connecting to Hue base station ${hueBaseStation.name} (${hueBaseStation.ipaddress})`);
     //Connect using node-hue-api and the supplied HUE_USERNAME
     return v3.api.createLocal(hueBaseStation.ipaddress).connect(HUE_USERNAME);

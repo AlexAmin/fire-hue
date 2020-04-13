@@ -18,6 +18,9 @@ firebaseAdmin.initializeApp({credential: firebaseAdmin.credential.cert(serviceAc
 const HUE_USERNAME = process.env.HUE_USER;
 //Optionally, a hue base name may be provided in case multiple base stations are present on the network
 const HUE_BASE_STATION_NAME = process.env.HUE_BASE_STATION_NAME;
+//If an IP address for the base station is supplied, no discovery will happen
+//The script will directly attempt to connect to this station
+const HUE_BASE_STATION_IP_ADDRESS = process.env.HUE_BASE_STATION_IP_ADDRESS
 
 //Prepare database
 const db = firebaseAdmin.firestore();
