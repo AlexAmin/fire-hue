@@ -1,3 +1,4 @@
+const RGBColor = require("./RGBColor");
 const v3 = require('node-hue-api').v3;
 const Queue = require("./queue");
 const LightState = v3.lightStates.LightState;
@@ -6,142 +7,95 @@ require('dotenv').config();
 const serviceAccount = require('./firebase-key');
 const {RoomCommand} = require("fire-hue-common/types");
 const {LightCommand} = require("fire-hue-common/types");
+const sync = require("./sync");
+const connectHue = require("./connect");
+const LIGHT_STATES = require("fire-hue-common").enum.States;
 
+//Initialize Firebase Admin
+firebaseAdmin.initializeApp({credential: firebaseAdmin.credential.cert(serviceAccount)});
 
-firebaseAdmin.initializeApp({
-    credential: firebaseAdmin.credential.cert(serviceAccount)
-});
-
-const queue = new Queue();
-const a = new LightCommand();
-const db = firebaseAdmin.firestore();
-const lightsCollection = db.collection("lights");
-const roomsCollection = db.collection("rooms");
-const commandsCollection = db.collection("commands");
-
-
+//Hue API username must be provided in env variables
 const HUE_USERNAME = process.env.HUE_USER;
-// The name of the light we wish to retrieve by name
-const LIGHT_ID = 1;
+//Optionally, a hue base name may be provided in case multiple base stations are present on the network
+const HUE_BASE_STATION_NAME = process.env.HUE_BASE_STATION_NAME;
 
-function convertHueLightToStoreLight(light){
-    const name = light._data.name;
-    const id = light._data.id;
-    return {name: name, id: id}
-}
-function convertHueGroupToRoom(group){
-    const name = group._data.name;
-    const id = group._data.id;
-    const lights = group._data.lights;
-    return {name: name, id: id, lights: lights}
-}
+//Prepare database
+const db = firebaseAdmin.firestore();
+//All lights are within the lights collection
+const lightsCollection = db.collection("lights");
+//All rooms are within the rooms collection
+const roomsCollection = db.collection("rooms");
+//The client pushes new commands into the commands collection
+const commandsCollection = db.collection("commands");
+//This script will move commands into the commandHistory collection after they're processed
+const commandHistoryCollection = db.collection("commandHistory");
+
+//The connected Hue API client
+let hueAPIClient;
+
+//All lights in a dictionary, indexed by their id
+let lights = {};
 
 function executeRoomCommand(api, command){
-
-}
-function hexToRgb(hex) {
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : null;
+    //TODO
 }
 
 function executeLightCommand(api, command){
     const state = new LightState();
     command = LightCommand.fromObject(command);
-    if(command.state === "on"){
-        state
-            .on()
-            .ct(200)
-
+    //make lights turn on immediately without an effect
+    state.effectNone();
+    if(command.state === LIGHT_STATES.ON){
+        state.on(true);
         state.brightness(command.brightness);
         if(command.color){
-            const rgb = hexToRgb(command.color);
-            state.rgb(rgb.r, rgb.g, rgb.b);
+            const rgb = new RGBColor().fromHex(command.color);
+            state.rgb(rgb.getRed(), rgb.getGreen(), rgb.getBlue());
         }
+        console.log(`${lights[command.id]} turned on at ${command.brightness}% brightness and color ${command.color}`)
     }else{
+        console.log(`${lights[command.id]} turned off`);
         state.off()
     }
 
     api.lights.setLightState(command.id, state);
 }
 
-v3.discovery.nupnpSearch()
-    .then(searchResults => {
-        searchResults = searchResults.filter( result => result.name === "Alex");
-        const host = searchResults[0].ipaddress;
-        console.log("Hue", host);
-        return v3.api.createLocal(host).connect(HUE_USERNAME);
-    })
-    .then(api => {
-        //queueLoop(api);
-        const date = new Date();
-        const commandHistoryCollection = db.collection("commandHistory");
-        commandsCollection
-            .onSnapshot(querySnapshot => {
-                querySnapshot.docChanges()
-                    .forEach((change)=>{
-                        if(change.type === "added"){
-                            const commandData = change.doc.data();
-                            const id = change.doc.id;
-                            commandsCollection.doc(change.doc.id).delete()
-                                .then(()=>{
-                                    commandHistoryCollection.doc(id).set(commandData)
-                                });
-                            switch(commandData.target){
-                                case "room":
-                                    executeRoomCommand(api, commandData);
-                                    break;
-                                case "light":
-                                    executeLightCommand(api, commandData)
-                                    break;
-                            }
-                        }
-                    })
-            });
-    });
 
-function sync(){
-    v3.discovery.nupnpSearch()
-        .then(searchResults => {
-            searchResults = searchResults.filter( result => result.name === "Alex");
-            const host = searchResults[0].ipaddress;
-            return v3.api.createLocal(host).connect(HUE_USERNAME);
-        })
-        .then(api => {
-            api.groups.getAll()
-                .then(allGroups=>{
-                    const rooms = allGroups.filter(group => group._data.type === "Room");
-                    rooms.forEach((room)=>{
-                        roomsCollection.doc(String(room.id)).set(convertHueGroupToRoom(room));
-                    })
-
-                });
-            api.lights.getAll()
-                .then(allLights => {
-                    // Display the lights from the bridge
-                    allLights.forEach((light)=>{
-                        //console.log(light);
-                        light = convertHueLightToStoreLight(light);
-                        lightsCollection.doc(String(light.id)).set(light)
-                        return;
-                        if(name.indexOf("Desk")>-1){
-                            // Do stuff with myLightState
-                            const state = new LightState()
-                                .off()
-                                .ct(200)
-                                .brightness(100);
-                            api.lights.setLightState(light._data.id, state);
-                        }
-                    })
-
-                });
-        })
-        .then(result => {
-            console.log(`Light state change was successful? ${result}`);
-        })
-    ;
+function commandAdded(change){
+    //Only listen for newly added commands
+    if(change.type !== "added") {
+        return;
+    }
+    //Get the actual command data from firestore
+    const commandData = change.doc.data();
+    //Firestore id of the command document
+    const commandDocumentId = change.doc.id;
+    //Remove the command and archive it asynchronously
+    commandsCollection.doc(change.doc.id).delete()
+        .then(()=>{
+            commandHistoryCollection.doc(commandDocumentId).set(commandData)
+        });
+    //Execute the command
+    switch(commandData.target){
+        case "room":
+            executeRoomCommand(hueAPIClient, commandData);
+            break;
+        case "light":
+            executeLightCommand(hueAPIClient, commandData)
+            break;
+    }
 }
-sync();
+async function start(){
+    hueAPIClient = await connectHue(HUE_USERNAME, HUE_BASE_STATION_NAME);
+    console.log("Hue connected");
+    lights = await sync(hueAPIClient, roomsCollection, lightsCollection);
+    console.log("Hue synced");
+    console.log("Listening for commands");
+    commandsCollection
+        .onSnapshot(querySnapshot => {
+            querySnapshot.docChanges()
+                .forEach(commandAdded)
+        });
+}
+start();
